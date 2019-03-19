@@ -95,6 +95,7 @@ function frontendeventrefund_civicrm_postProcess($formName, &$form) {
       $p = [];
       CRM_Price_BAO_LineItem::changeFeeSelections($p, $participantID, 'participant', $contributionID, $feeBlock, $lineItems);
       $paymentDetails = getTransactionDetails($contributionID);
+      unset($paymentDetails['id']);
 
       // Submit refund payment
       $contributionDetails = civicrm_api3('Contribution', 'getsingle', ['id' => $contributionID]);
