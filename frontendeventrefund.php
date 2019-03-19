@@ -75,6 +75,13 @@ function frontendeventrefund_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL)
   return _frontendeventrefund_civix_civicrm_upgrade($op, $queue);
 }
 
+function frontendeventrefund_civicrm_buildForm($formName, &$form) {
+  if ($formName == 'CRM_Event_Form_SelfSvcUpdate') {
+    // supress alert
+    $form->assign('contributionId', NULL);
+  }
+}
+
 function frontendeventrefund_civicrm_postProcess($formName, &$form) {
   if ($formName == 'CRM_Event_Form_SelfSvcUpdate') {
     $params = $form->controller->exportValues();
@@ -96,6 +103,7 @@ function frontendeventrefund_civicrm_postProcess($formName, &$form) {
       CRM_Price_BAO_LineItem::changeFeeSelections($p, $participantID, 'participant', $contributionID, $feeBlock, $lineItems);
       $paymentDetails = getTransactionDetails($contributionID);
       unset($paymentDetails['id']);
+      $paymentDetails['trxn_date'] = CRM_Utils_Array::value('trxn_date', $paymentDetails, date('YmdHis'));
 
       // Submit refund payment
       $contributionDetails = civicrm_api3('Contribution', 'getsingle', ['id' => $contributionID]);
@@ -122,7 +130,6 @@ function frontendeventrefund_civicrm_postProcess($formName, &$form) {
       $contribution = CRM_Contribute_BAO_Contribution::retrieve($params, $defaults, $params);
       CRM_Contribute_BAO_Contribution::addPayments(array($contribution), $contributionDetails['contribution_status_id']);
     }
-
   }
 }
 
