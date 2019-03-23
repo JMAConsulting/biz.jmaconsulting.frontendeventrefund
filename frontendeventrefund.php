@@ -101,7 +101,12 @@ function frontendeventrefund_civicrm_postProcess($formName, &$form) {
       }
       $p = [];
       CRM_Price_BAO_LineItem::changeFeeSelections($p, $participantID, 'participant', $contributionID, $feeBlock, $lineItems);
-      $paymentDetails = getTransactionDetails($contributionID);
+      $paymentDetails = getTransactionDetails($contributionID, 'Completed');
+      // Get chapter and fund data for previous trxn.
+      $chapterFund = CRM_Core_DAO::executeQuery("SELECT chapter_code, fund_code FROM civicrm_chapter_entity WHERE entity_id = {$paymentDetails['id']} AND entity_table = 'civicrm_financial_trxn'")->fetchAll();
+      if (!empty($chapterFund)) {
+        $chapterFund = $chapterFund[0];
+      }
       unset($paymentDetails['id']);
       $paymentDetails['trxn_date'] = CRM_Utils_Array::value('trxn_date', $paymentDetails, date('YmdHis'));
 
@@ -129,11 +134,19 @@ function frontendeventrefund_civicrm_postProcess($formName, &$form) {
       $params = array('id' => $contributionID);
       $contribution = CRM_Contribute_BAO_Contribution::retrieve($params, $defaults, $params);
       CRM_Contribute_BAO_Contribution::addPayments(array($contribution), $contributionDetails['contribution_status_id']);
+      $paymentDetails = getTransactionDetails($contributionID, 'Refunded');
+      $chapterParams = [
+        "entity_id" => $paymentDetails['id'],
+        "entity_table" => "civicrm_financial_trxn",
+        "chapter" => CRM_Utils_Array::value('chapter_code', $chapterFund),
+        "fund" => CRM_Utils_Array::value('fund_code', $chapterFund),
+      ];
+      CRM_EFT_BAO_EFT::saveChapterFund($chapterParams);
     }
   }
 }
 
-function getTransactionDetails($contributionID) {
+function getTransactionDetails($contributionID, $status) {
   return CRM_Core_DAO::executeQuery("SELECT ft.*, cc.contact_id FROM civicrm_financial_trxn ft
     INNER JOIN civicrm_entity_financial_trxn eft ON (eft.financial_trxn_id = ft.id AND eft.entity_table = 'civicrm_contribution')
     INNER JOIN civicrm_contribution cc ON cc.id = eft.entity_id
@@ -141,7 +154,7 @@ function getTransactionDetails($contributionID) {
       LIMIT 1
     ", [
       1 => [$contributionID, 'Integer'],
-      2 => [CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed'), 'Integer'],
+      2 => [CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', $status), 'Integer'],
     ])->fetchAll()[0];
 }
 
