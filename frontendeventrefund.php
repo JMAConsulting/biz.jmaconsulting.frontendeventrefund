@@ -116,6 +116,10 @@ function frontendeventrefund_civicrm_postProcess($formName, &$form) {
         'amount' => $paymentDetails['total_amount'],
         'contactID' => $contributionDetails['contact_id'],
       ], $contributionDetails);
+
+      CRM_Utils_System::redirect('civicrm/moneris/refund', "reset=1&id={$contributionID}&cid=" . $contributionDetails['contact_id']);
+
+      /**
       if ($paymentProcessorID = CRM_Utils_Array::value('payment_processor_id', $paymentDetails)) {
         $payment = Civi\Payment\System::singleton()->getByProcessor(CRM_Financial_BAO_PaymentProcessor::getPayment($paymentProcessorID));
         if ($payment->supportsRefund()) {
@@ -134,14 +138,7 @@ function frontendeventrefund_civicrm_postProcess($formName, &$form) {
       $params = array('id' => $contributionID);
       $contribution = CRM_Contribute_BAO_Contribution::retrieve($params, $defaults, $params);
       CRM_Contribute_BAO_Contribution::addPayments(array($contribution), $contributionDetails['contribution_status_id']);
-      $paymentDetails = getTransactionDetails($contributionID, 'Refunded');
-      $chapterParams = [
-        "entity_id" => $paymentDetails['id'],
-        "entity_table" => "civicrm_financial_trxn",
-        "chapter" => CRM_Utils_Array::value('chapter_code', $chapterFund),
-        "fund" => CRM_Utils_Array::value('fund_code', $chapterFund),
-      ];
-      CRM_EFT_BAO_EFT::saveChapterFund($chapterParams);
+      */
     }
   }
 }
