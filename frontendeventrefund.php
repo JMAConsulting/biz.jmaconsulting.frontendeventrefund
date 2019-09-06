@@ -89,10 +89,13 @@ function frontendeventrefund_civicrm_postProcess($formName, &$form) {
       // Change Fee
       $participantID = $form->getVar('_participant_id');
       $contributionID = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_ParticipantPayment', $participantID, 'contribution_id', 'participant_id');
+      $contactID = CRM_Core_DAO::getFieldValue('CRM_Contribute_BAO_Contribution', $contributionID, 'contact_id');
       $priceSetID = CRM_Core_DAO::singleValueQuery("
           SELECT pf.price_set_id
           FROM civicrm_line_item li INNER JOIN civicrm_price_field pf ON li.price_field_id = pf.id AND li.contribution_id = $contributionID
          LIMIT 1");
+
+      CRM_Utils_System::redirect('civicrm/moneris/refund', "reset=1&id={$contributionID}&cid={$contactID}");
 
       $feeBlock = CRM_Price_BAO_PriceSet::getSetDetail($priceSetID, TRUE, FALSE)[$priceSetID]['fields'];
       $lineItems = CRM_Price_BAO_LineItem::getLineItems($participantID, 'participant');
@@ -116,8 +119,6 @@ function frontendeventrefund_civicrm_postProcess($formName, &$form) {
         'amount' => $paymentDetails['total_amount'],
         'contactID' => $contributionDetails['contact_id'],
       ], $contributionDetails);
-
-      CRM_Utils_System::redirect('civicrm/moneris/refund', "reset=1&id={$contributionID}&cid=" . $contributionDetails['contact_id']);
 
       /**
       if ($paymentProcessorID = CRM_Utils_Array::value('payment_processor_id', $paymentDetails)) {
