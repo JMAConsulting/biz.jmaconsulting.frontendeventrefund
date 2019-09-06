@@ -95,7 +95,7 @@ function frontendeventrefund_civicrm_postProcess($formName, &$form) {
           FROM civicrm_line_item li INNER JOIN civicrm_price_field pf ON li.price_field_id = pf.id AND li.contribution_id = $contributionID
          LIMIT 1");
 
-      $urlParams = "reset=1&cid={$this->_contactID}&selectedChild=contribute";
+      $urlParams = "reset=1&cid={$contactID}&selectedChild=contribute";
       $url = CRM_Utils_System::url('civicrm/contact/view', $urlParams);
       $payment = Civi\Payment\System::singleton()->getByName('Moneris', 0);
       try {
