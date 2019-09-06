@@ -95,7 +95,15 @@ function frontendeventrefund_civicrm_postProcess($formName, &$form) {
           FROM civicrm_line_item li INNER JOIN civicrm_price_field pf ON li.price_field_id = pf.id AND li.contribution_id = $contributionID
          LIMIT 1");
 
-      CRM_Utils_System::redirect('civicrm/moneris/refund', "reset=1&id={$contributionID}&cid={$contactID}");
+      $urlParams = "reset=1&cid={$this->_contactID}&selectedChild=contribute";
+      $url = CRM_Utils_System::url('civicrm/contact/view', $urlParams);
+      $payment = Civi\Payment\System::singleton()->getByName('Moneris', 0);
+      try {
+        $paymentParams = $payment->refundPayment(array('contribution_id' => $contributionID));
+      }
+      catch (\Civi\Payment\Exception\PaymentProcessorException $e) {
+        CRM_Core_Error::statusBounce($e->getMessage(), $url, ts('Payment Processor Error'));
+      }
 
       $feeBlock = CRM_Price_BAO_PriceSet::getSetDetail($priceSetID, TRUE, FALSE)[$priceSetID]['fields'];
       $lineItems = CRM_Price_BAO_LineItem::getLineItems($participantID, 'participant');
@@ -112,7 +120,7 @@ function frontendeventrefund_civicrm_postProcess($formName, &$form) {
       }
       unset($paymentDetails['id']);
       $paymentDetails['trxn_date'] = CRM_Utils_Array::value('trxn_date', $paymentDetails, date('YmdHis'));
-
+      /**
       // Submit refund payment
       $contributionDetails = civicrm_api3('Contribution', 'getsingle', ['id' => $contributionID]);
       $paymentParams = array_merge([
@@ -120,14 +128,13 @@ function frontendeventrefund_civicrm_postProcess($formName, &$form) {
         'contactID' => $contributionDetails['contact_id'],
       ], $contributionDetails);
 
-      /**
       if ($paymentProcessorID = CRM_Utils_Array::value('payment_processor_id', $paymentDetails)) {
         $payment = Civi\Payment\System::singleton()->getByProcessor(CRM_Financial_BAO_PaymentProcessor::getPayment($paymentProcessorID));
         if ($payment->supportsRefund()) {
           $payment->doRefund($paymentParams);
         }
       }
-
+*/
       // Handle financial records
       $paymentDetails = array_merge(
         $paymentDetails,
@@ -138,8 +145,7 @@ function frontendeventrefund_civicrm_postProcess($formName, &$form) {
       $result = CRM_Contribute_BAO_Contribution::recordAdditionalPayment($contributionID, $paymentDetails, 'refund');
       $params = array('id' => $contributionID);
       $contribution = CRM_Contribute_BAO_Contribution::retrieve($params, $defaults, $params);
-      CRM_Contribute_BAO_Contribution::addPayments(array($contribution), $contributionDetails['contribution_status_id']);
-      */
+      CRM_Contribute_BAO_Contribution::addPayments(array($contribution), 7);
     }
   }
 }
